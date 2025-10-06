@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Book Details: {{ book.title }}{% endblock %}
+
+{% block header %}BOOK DETAILS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row g-0">
+                <div class="col-md-3 p-2">
+                    <img src="{{ book.url }}" class="img-fluid rounded shadow-sm" alt="{{ book.title }} cover">
+                </div>
+
+                <div class="col-md-9">
+                    <h5 class="mb-0">{{ book.title }}</h5>
+                    <p class="h5">By {{ book.authors | join(", ") }}</p>
+
+                    <p class="mb-0">
+                        Category: {{ ([book.category] + book.genres) | join(", ") }}<br>
+                        Pages: {{ book.pages }}<br>
+                        Copies: <strong>{{ book.copies }}</strong> Available: <strong>{{ book.available }}</strong>
+                    </p>
+                    
+                 
+                    <br>
+                    {% set full_description = book.description | join('<br><br>') %}
+                    <p class="card-text">{{ full_description | safe }}</p>
+                    
+                    <div class="text-end mt-4">
+                        <a href="{{ url_for('book_titles') }}" class="btn btn-success">Back to Book Titles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

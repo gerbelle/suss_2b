@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Book Titles{% endblock %}
+
+{% block content %}
+<form method="GET" action="{{ url_for('book_titles') }}">
+    <div class="green-filter-bar d-flex justify-content-between align-items-center">
+        <div class="number-of-titles-box">
+            <span>Number of titles: {{ books|length }}</span>
+        </div>
+
+        <div class="d-flex align-items-center">
+            <span class="me-2">Category</span>
+            
+            <select class="form-select me-2" name="category" style="width: auto;">
+                <option value="All" {% if selected_category == 'All' %}selected{% endif %}>All</option>
+                
+                {% for cat in unique_categories %} <!--loop thru the uniq cat-->
+                    <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+            
+            <button class="btn btn-success" type="submit">Search</button>
+        </div>
+    </div>
+</form>
+
+
+{% for book in books %}
+<div class="card mb-4 shadow-sm">
+    <div class="row g-0">
+        <div class="col-md-2 p-2">
+            <img src="{{ book.url }}" class="img-fluid rounded" alt="{{ book.title }} cover">
+        </div>
+        <div class="col-md-10">
+            <div class="card-body">
+                <h5 class="card-title">{{ book.title }} <br> By {{ book.authors | join(", ") }}</h5>
+
+                <p class="card-text">
+                    <!-- category and genres -->
+                    </h5>
+                    <small class="text-muted">Category: {{ ([book.category] + book.genres) | join(", ") }}</small><br>
+                    <small class="text-muted">Pages: {{ book.pages }}</small>
+                </p>
+                <!-- shows the first and last sentence of the description -->
+                <p class="card-text">{{ book.description[0] }}</p>
+                <p class="card-text">{{ book.description[-1] }}</p>
+
+                <div class="text-end">
+                    <a href="{{ url_for('book_detail', book_title=book.title) }}" class="btn btn-success">More details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
