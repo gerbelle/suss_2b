@@ -1,4 +1,8 @@
 from app import db
+from flask_login import UserMixin # Import UserMixin for user session management
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, Length
 
 all_books = [
     {
@@ -208,4 +212,61 @@ def db_with_books():
         else:
             print("Book collection already populated.")
 
+
+class LoginForm(FlaskForm):
+    """
+    A Flask-WTF form for user login.
+    """
+    email = StringField('Email', validators=[
+        DataRequired(message="Email is required.")
+    ])
+
+    password = PasswordField('Password', validators=[
+        DataRequired(message="Password is required.")
+    ])
     
+    remember = BooleanField('Remember Me')
+
+    submit = SubmitField('Sign In')
+
+class RegForm(FlaskForm):
+    """
+    A Flask-WTF form for user registration.
+    """
+    username = StringField('Username', validators=[
+        DataRequired(message="Username is required.")
+        
+    ])
+
+    email = StringField('Email', validators=[
+        DataRequired(message="Email is required."),
+        
+    ])
+
+    password = PasswordField('Password', validators=[
+        DataRequired(message="Password is required."),
+        
+    ])
+    
+    submit = SubmitField('Sign Up')
+
+class User(db.Document, UserMixin): 
+    """
+    Represents a user in the BookStoreDB.
+    """
+    meta = {'collection': 'users'}
+    email = db.EmailField(required=True, unique=True)
+    password = db.StringField(required=True)
+    name = db.StringField(required=True, unique=True, max_length=50)
+
+    @staticmethod
+    def save_user(name, password, email):
+        """
+        Save a new user to the database.
+        Returns True if successful, False if username or email already exists.
+        """
+        if User.objects(name=name).first() or User.objects(email=email).first():
+            return False  # Username or email already exists
+        new_user = User(name=name, password=password, email=email)
+        new_user.save()
+        return True

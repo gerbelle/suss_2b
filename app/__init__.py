@@ -3,6 +3,7 @@ from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
 
 db = MongoEngine()
+login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
@@ -16,5 +17,17 @@ def create_app():
     }
 
     db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = 'login' #The name of the view function for the login page
+    login_manager.login_message_category = 'info' # Set a category for flash messages
+    
+    
+
     return app
-app = create_app()
+
+app = create_app()    
+
+from app.model import User
+@login_manager.user_loader
+def load_user(user_id):
+    return User.objects(id=user_id).first()

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Register - SG Library{% endblock %}
+{% block header %}REGISTER{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <!-- Adjusted column size to give the card a nice width on various screens -->
+    <div class="col-xl-5 col-lg-6 col-md-8 p-3">
+        
+        <!-- Combined the card structure from the example -->
+        <div class="card shadow-lg mt-5">
+            
+            <!-- Adopted the Card Header style for a strong title bar -->
+            <div class="card-header bg-primary text-white">
+                <h2 class="text-center mb-0">Register</h2>
+            </div>
+            
+            <div class="card-body">
+                <!-- NOTE: Flash messages are handled globally in base.html now, so no need for an internal block here. -->
+                
+                <form method="POST" action="{{ url_for('register') }}">
+                    
+                    {{ form.hidden_tag() }}
+                    
+                    
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control", placeholder="Enter email address") }}
+                        {% for error in form.email.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control", placeholder="Choose a secure password") }}
+                        {% for error in form.password.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control", placeholder="Enter your full name") }}
+                        {% for error in form.username.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    {{ form.submit(class="btn btn-primary w-100") }}
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
