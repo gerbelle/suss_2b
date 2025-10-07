@@ -4,55 +4,54 @@
 {% block header %}REGISTER{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <!-- Adjusted column size to give the card a nice width on various screens -->
+<div class="row"> 
+   
     <div class="col-xl-5 col-lg-6 col-md-8 p-3">
-        
-        <!-- Combined the card structure from the example -->
         <div class="card shadow-lg mt-5">
             
-            <!-- Adopted the Card Header style for a strong title bar -->
-            <div class="card-header bg-primary text-white">
-                <h2 class="text-center mb-0">Register</h2>
+            <div class="card-header bg-light border-bottom">
+                <h2 class="mb-0 text-dark">Register</h2> 
             </div>
-            
+
             <div class="card-body">
-                <!-- NOTE: Flash messages are handled globally in base.html now, so no need for an internal block here. -->
-                
                 <form method="POST" action="{{ url_for('register') }}">
                     
                     {{ form.hidden_tag() }}
                     
-                    
                     <div class="mb-3">
                         {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control", placeholder="Enter email address") }}
+                        {{ form.email(class="form-control", placeholder="Enter email") }}
                         {% for error in form.email.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     </div>
-
                     
+               
                     <div class="mb-3">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control", placeholder="Choose a secure password") }}
+                        {{ form.password(class="form-control", placeholder="Enter password") }}
                         {% for error in form.password.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     </div>
-                    
-                    
+
+                   
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control", placeholder="Enter your full name") }}
+                        {{ form.username(class="form-control", placeholder="Enter username") }}
                         {% for error in form.username.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     </div>
-                    
-                    <!-- Submit Button -->
-                    {{ form.submit(class="btn btn-primary w-100") }}
+
+                
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-success">Submit</button> 
+                    </div>
                 </form>
+                
+                <hr>
+
 
             </div>
         </div>

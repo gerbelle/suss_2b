@@ -19,7 +19,6 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'login' #The name of the view function for the login page
-    login_manager.login_message_category = 'info' # Set a category for flash messages
     
     
 

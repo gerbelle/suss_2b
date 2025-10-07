@@ -70,26 +70,29 @@ def book_detail(book_title):
 #login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # 1. Redirect if already authenticated
     if current_user.is_authenticated:
         return redirect(url_for('book_titles'))
-        
+
     form = LoginForm()
     if form.validate_on_submit():
         email = form.email.data
         password = form.password.data
+        remember = form.remember.data 
 
+        # 1. Find the user by email
         user = User.objects(email=email).first()
         
-        if user and user.password == password: 
-            login_user(user, remember=form.remember.data)
-            flash('Logged in successfully.', 'success')
+        # 2. Check if user exists AND the password hash matches
+        # The User model now has a check_password method using check_password_hash
+        if user and user.check_password(password): 
+            login_user(user, remember=remember) # remember me functionality
             
             # 3. Redirect to the requested page or home
             next_page = request.args.get('next')
             return redirect(next_page or url_for('book_titles')) 
         else:
-            flash('Invalid email or password.', 'danger')
+            # Invalid credentials. The form will re-render without a flash message.
+            pass
 
     return render_template("login.html", form=form)
 
@@ -102,18 +105,17 @@ def register():
     if form.validate_on_submit():
         name = form.username.data
         
-       
-        # Assumes User.save_user returns the user object or None
+        # User.save_user now handles hashing the password before saving
         new_user = User.save_user(name=name, password=form.password.data, email=form.email.data)
         
         if new_user: 
-            flash(f'Account created for {new_user.name}! Please log in.', 'success')
+            # Successful registration, redirect to login
             return redirect(url_for('login')) 
         else:
-            flash('Name or email already exists.', 'danger')
+            # User already exists or error. The form will re-render without a flash message.
+            pass
         
     return render_template("register.html", form=form)
-
 
 @app.route('/logout')
 @login_required # Requires the user to be logged in to access
