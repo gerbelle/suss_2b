@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Book{% endblock %}
+{% block header %}ADD A BOOK{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-start" >
+    <!-- Use col-12 to ensure the form stretches to the full width next to the sidebar -->
+    <div class="col-12 p-3">
+        <div class="card shadow-lg mt-3">
+
+            <div class="card-body" style="background-color: #f8f9fa;">
+                <form method="POST" action="{{ url_for('add_book') }}">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Form Group for Genres (Full width block) -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.genres.id }}" class="col-md-3 col-form-label fw-bold">Choose Multiple <br> Genres:</label>
+                        <div class="col-md-9">
+                            {{ form.genres(class="form-control", placeholder="Enter genres separated by commas (e.g., Fantasy, Mystery)") }}
+                            {% for error in form.genres.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Form Group for Title -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.title.id }}" class="col-md-3 col-form-label fw-bold">Title:</label>
+                        <div class="col-md-9">
+                            {{ form.title(class="form-control") }}
+                            {% for error in form.title.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+
+
+                    <!-- Form Group for Category -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.category.id }}" class="col-md-3 col-form-label fw-bold">Choose a category:</label>
+                        <div class="col-md-9">
+                            {{ form.category(class="form-select") }}
+                            {% for error in form.category.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Form Group for URL -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.url.id }}" class="col-md-3 col-form-label fw-bold">URL for Cover:</label>
+                        <div class="col-md-9">
+                            {{ form.url(class="form-control") }}
+                            {% for error in form.url.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Form Group for Description (Full width block) -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.description.id }}" class="col-md-3 col-form-label fw-bold">Description:</label>
+                        <div class="col-md-9">
+                            {{ form.description(class="form-control", rows="5") }}
+                            {% for error in form.description.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            <br>
+                    </div>
+                   
+                    <!-- Loop for 5 Author/Illustrator Fields -->
+                    {% for author_entry in form.new_book_authors %}
+
+                    <div class="mb-3 row align-items-center">
+                        <label class="col-md-3 col-form-label fw-bold">Author {{ loop.index }}:</label>
+                        <div class="col-md-9 d-flex align-items-center">
+                            {{ author_entry.form.name(class="form-control me-3") }}
+                            
+                            <div class="form-check form-check-inline m-0">
+                                {{ author_entry.form.is_illustrator(class="form-check-input") }}
+                                {{ author_entry.form.is_illustrator.label(class="form-check-label text-nowrap") }}
+                            </div>
+                        </div>
+                    </div>
+                    {% for error in author_entry.form.name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    {% endfor %}
+                    {% for error in form.new_book_authors.errors %}
+                        <div class="row">
+                            <div class="col-md-9 offset-md-3">
+                                <span class="text-danger">{{ error }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <!-- End Author Loop -->
+
+                    <!-- Form Group for Pages -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.pages.id }}" class="col-md-3 col-form-label fw-bold">Number of Pages:</label>
+                        <div class="col-md-9">
+                            {{ form.pages(class="form-control") }}
+                            {% for error in form.pages.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Form Group for Copies -->
+                    <div class="mb-3 row align-items-center">
+                        <label for="{{ form.copies.id }}" class="col-md-3 col-form-label fw-bold">Number of Copies:</label>
+                        <div class="col-md-9">
+                            {{ form.copies(class="form-control") }}
+                            {% for error in form.copies.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                 
+                    <!-- Submit Button aligned to the right -->
+                    <div class="d-flex justify-content-end mt-4">
+                        {{ form.submit(class="btn btn-success btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

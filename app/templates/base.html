@@ -29,7 +29,7 @@
           </a>
           
           {# --- START LOGGED-IN USER DISPLAY --- #}
-          {% if current_user.is_authenticated %}
+         {% if current_user.is_authenticated %}
           <div class="text-white ps-5 pb-3 mb-3 d-flex align-items-center bottom-border">
               <i class="bi bi-person-circle me-2 fs-5"></i>
               <span>{{ current_user.name }}</span>
@@ -45,14 +45,19 @@
               </a>
             </li>
 
+          {# --- START ADMIN-ONLY LINK ADDED HERE --- #}
+          {% if current_user.email == "admin@lib.sg"  %}
+          <li class="nav-item">
+            <a href="{{ url_for('add_book') }}" class="nav-link  py-3 ps-5 mb-2 sidebar-link active" style="color: white; ">
+              <i class="bi bi-cloud-arrow-up-fill me-2"></i>New Book
+            </a>
+          </li>
+          {% endif %}
+          {# --- END ADMIN-ONLY LINK ADDED HERE --- #}
+
             {# --- START LOGIN/LOGOUT LOGIC UPDATED --- #}
             {% if current_user.is_authenticated %}
             <li class="nav-item">
-              
-              <a href="{{ url_for('logout') }}" class="nav-link py-3 ps-5 mb-2 sidebar-link active" style="color: white;">
-                <i class="bi bi-box-arrow-right me-2"></i>Logout
-              </a>
-            </li>
             {% else %}
             <li class="nav-item">
               <a href="{{ url_for('login') }}" class="nav-link py-3 ps-5 mb-2 sidebar-link active" style="color: white;">

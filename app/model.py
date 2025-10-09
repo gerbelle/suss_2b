@@ -1,8 +1,9 @@
 from app import db
 from flask_login import UserMixin # Import UserMixin for user session management
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Length
+from wtforms import Form, SelectMultipleField, SelectField, StringField, PasswordField, BooleanField, SubmitField, TextAreaField, IntegerField, FieldList, FormField
+from wtforms.validators import DataRequired, Length, NumberRange, InputRequired, Optional, URL, ValidationError
+from wtforms.fields import URLField
 from werkzeug.security import check_password_hash, generate_password_hash
 
 all_books = [
@@ -263,6 +264,10 @@ class User(db.Document, UserMixin):
     def check_password(self, password):
         """Check if the provided password matches the stored hash."""
         return check_password_hash(self.password, password)
+    @property
+    def is_admin(self):
+        """Check if the user is an admin based on their email."""
+        return self.email == "admin@lib.sg"
 
     @staticmethod
     def save_user(name, password, email):
@@ -287,3 +292,67 @@ class User(db.Document, UserMixin):
             # Handle potential database save errors
             print(f"Error saving user: {e}")
             return None
+
+# new book entry, global list of genres for the form
+GENRES = [
+    "Animals", "Business", "Comics", "Communication", "Dark Academia",
+    "Emotion", "Fantasy", "Fiction", "Friendship", "Graphic Novels", "Grief",
+    "Historical Fiction", "Indigenous", "Inspirational", "Magic", "Mental Health",
+    "Nonfiction", "Personal Development", "Philosophy", "Picture Books", "Poetry",
+    "Productivity", "Psychology", "Romance", "School", "Self Help"
+]
+
+#illustrator field for new book form
+class AuthorField(Form):
+    """A small sub-form for collecting a single author's name and role."""
+    name = StringField('Author/Illustrator Name', validators=[Optional()])
+    is_illustrator = BooleanField('Illustrator')
+
+# new book form
+class NewBookForm(FlaskForm):
+    """
+    A Flask-WTF form for adding a new book to the database.
+    """
+    title = StringField('Title', validators=[
+        DataRequired(message="Title is required."),
+        Length(max=200)
+    ])
+
+    category = SelectField('Category', choices=[
+        ('Adult', 'Adult'), 
+        ('Teen', 'Teen'), 
+        ('Children', 'Children')
+    ], validators=[DataRequired()])
+
+    url = URLField('Cover Image URL', validators=[Optional()], description="Optional link to the book's cover image.")
+    
+    # Description field will be split into a list of strings (paragraphs) in the route
+    description = TextAreaField('Description (Use Enter for new paragraphs)', validators=[
+        DataRequired(message="Description is required.")
+    ])
+
+    # Allow up to 5 authors/illustrators
+    new_book_authors = FieldList(FormField(AuthorField), max_entries=5)
+
+    genres = SelectMultipleField('Genres', choices=[(g, g) for g in GENRES], validators=[
+        DataRequired(message="At least one genre must be selected.")
+    ])
+
+    pages = IntegerField('Pages', validators=[
+        Optional(), 
+        NumberRange(min=1, message="Pages must be a positive number.")
+    ])
+
+    copies = IntegerField('Number of Copies', validators=[
+        DataRequired(message="Number of copies is required."),
+        NumberRange(min=1, message="Must have at least 1 copy.")
+    ])
+    
+    submit = SubmitField('Submit')
+
+    def validate_new_book_authors(self, field):
+        """Ensure at least one author/contributor name has been entered."""
+        has_author = any(entry.form.name.data for entry in field.entries)
+        if not has_author:
+            # CORRECT: Raise a ValidationError exception with your message
+            raise ValidationError("You must enter at least one author/contributor name.")

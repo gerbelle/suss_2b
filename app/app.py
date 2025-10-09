@@ -1,7 +1,34 @@
 from flask import Flask, request, render_template, redirect, url_for, flash
-from app.model import Book, db_with_books, User, LoginForm, RegForm
+from app.model import Book, db_with_books, User, LoginForm, RegForm, NewBookForm
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app
+
+# Define a admin required
+from functools import wraps
+from flask import abort
+
+def admin_required(f):
+    """
+    Restricts access to the decorated route to authenticated users whose 
+    email is 'admin@lib.sg'. Uses the new is_admin property on the User model.
+    """
+    # The original decorator used wraps and decorated_function, so we keep that structure.
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # We check the is_admin property, which now handles the email check.
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('Access denied. You must be the administrator to view this page.', 'danger')
+            
+            # Use redirect for better user experience instead of raw abort(403)
+            if current_user.is_authenticated:
+                # Logged in but not admin
+                return redirect(url_for('book_titles')) 
+            else:
+                # Not logged in at all
+                return redirect(url_for('login')) 
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_unique_categories():
@@ -123,3 +150,53 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('book_titles'))
+
+
+#adding book, admin only
+@app.route('/add_book', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_book():
+    """
+    Handles adding a new book to the database.
+    """
+    form = NewBookForm()
+    while len(form.new_book_authors.entries) < 5:
+        form.new_book_authors.append_entry()
+
+    if form.validate_on_submit():
+        authors = []
+        for entry in form.new_book_authors.data:
+            author_name = entry['name'].strip()
+            is_illustrator = entry['is_illustrator']
+            
+            if author_name:
+                if is_illustrator:
+                    authors.append(f"{author_name} (Illustrator)") # Changed for clarity
+                else:
+                    authors.append(author_name)
+        
+
+        genre_list = [g.strip() for g in form.genres.data]
+        description_list = [p.strip() for p in form.description.data.split('\n') if p.strip()]
+        
+        try:
+            new_book = Book(
+                title=form.title.data,
+                category=form.category.data,
+                genres=genre_list,
+                url=form.url.data,
+                description=description_list,
+                authors=authors,
+                pages=form.pages.data,
+                copies=form.copies.data,
+                available=form.copies.data
+            )
+            new_book.save()
+            flash(f'Book "{new_book.title}" added successfully!', 'success')
+            return redirect(url_for('book_titles'))
+            
+        except Exception as e:
+            flash(f'An error occurred while saving the book: {e}', 'danger')
+            
+    return render_template('add_book.html', form=form)
