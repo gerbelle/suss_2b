@@ -200,3 +200,17 @@ def add_book():
             flash(f'An error occurred while saving the book: {e}', 'danger')
             
     return render_template('add_book.html', form=form)
+
+# Making a loan
+@app.route('/make_loan/<string:title>', methods=['POST'])
+@login_required
+def make_loan(title):
+    book = Book.objects(title=title).first()
+    if book and book.available > 0:
+        book.available -= 1
+        book.save()
+        success, message = book.borrow(current_user)
+        flash(message, 'success' if success else 'danger')
+    else:
+        flash(f'Book "{book.title}" is not available for loan.', 'danger')
+    return redirect(url_for('book_titles'))

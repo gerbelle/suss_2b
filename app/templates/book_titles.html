@@ -45,9 +45,21 @@
                 <!-- shows the first and last sentence of the description -->
                 <p class="card-text">{{ book.description[0] }}</p>
                 <p class="card-text">{{ book.description[-1] }}</p>
+                
+                <!-- MAKE A LOAN BUTTON (Conditional) -->
+                <div class="d-flex justify-content-end align-items-center gap-2">
+    
+                {% if book.available > 0 %}
+                <form method="POST" action="{{ url_for('make_loan', title=book.title) }}" class="m-0 p-0">
+                    <button type="submit" class="btn btn-success btn-sm" title="Loan one copy of {{ book.title }}">
+                    Make a Loan
+                    </button>
+                </form>
+                {% endif %}
 
-                <div class="text-end">
-                    <a href="{{ url_for('book_detail', book_title=book.title) }}" class="btn btn-success">More details</a>
+                <a href="{{ url_for('book_detail', book_title=book.title) }}" class="btn btn-success btn-sm">
+                 More details
+                </a>
                 </div>
             </div>
         </div>

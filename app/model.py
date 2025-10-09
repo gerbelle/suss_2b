@@ -199,6 +199,36 @@ class Book(db.Document):
     available = db.IntField()
     copies = db.IntField()
 
+    def borrow_book(self, user):
+        """
+        Handles the logic for borrowing a book.
+        Decreases the available count and adds the book title to the user's borrowed titles.
+        """
+        # Check if user has already borrowed this book
+        if self.title in user.borrowed_titles:
+            return False, f"You have already borrowed a copy of '{self.title}'."
+                    
+        if self.available > 0:
+            self.available -= 1
+            self.save()
+            user.borrowed_titles.append(self.title)
+            user.save()
+            return True, f"Successfully borrowed '{self.title}'."
+        return False, f"'{self.title}' is not available for borrowing."
+
+    def return_book(self, user):
+        """
+        Handles the logic for returning a book.
+        Increases the available count and removes the book title from the user's borrowed titles.
+        """
+        # Check if user has borrowed this book
+        if self.title in user.borrowed_titles:
+            self.available += 1
+            self.save()
+            user.borrowed_titles.remove(self.title)
+            user.save()
+            return True, f"Successfully returned '{self.title}'."
+        return False, f"Error: '{self.title}' was not found in your borrowed books."
 
 def db_with_books():
     """
@@ -260,6 +290,9 @@ class User(db.Document, UserMixin):
     email = db.EmailField(required=True, unique=True)
     password = db.StringField(required=True)
     name = db.StringField(required=True, unique=True, max_length=50)
+    
+    # Tracks the titles of books currently borrowed by the user 3bii
+    borrowed_titles = db.ListField(db.StringField(), default=list)
 
     def check_password(self, password):
         """Check if the provided password matches the stored hash."""

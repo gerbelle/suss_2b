@@ -28,8 +28,27 @@
                     {% set full_description = book.description | join('<br><br>') %}
                     <p class="card-text">{{ full_description | safe }}</p>
                     
-                    <div class="text-end mt-4">
-                        <a href="{{ url_for('book_titles') }}" class="btn btn-success">Back to Book Titles</a>
+                    <div class="d-flex justify-content-end align-items-center gap-2">
+                    <a href="{{ url_for('book_titles') }}" class="btn btn-success">
+                    Back to Book Titles
+                    </a>
+
+                    {% if book.available > 0 %}
+    
+                    <form method="POST" action="{{ url_for('make_loan', title=book.title) }}" class="m-0 p-0">
+                        <button type="submit" class="btn btn-success" title="Loan one copy of {{ book.title }}">
+                        Make a Loan
+                        </button>
+                    </form>
+    
+                    {% else %}
+    
+                        <button type="button" class="btn btn-danger disabled" title="{{ book.title }} is currently not available">
+                        Not Available
+                        </button>
+    
+                    {% endif %}
+    
                     </div>
                 </div>
             </div>
