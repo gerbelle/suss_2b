@@ -47,7 +47,7 @@
                                 {% endif %}
                                 {# 2. Title and Author below the image #}
                                 <div>
-                                    <strong>{{ loan.book.title }}</strong><br>
+                                    {{ loan.book.title }}<br>
                                     <small class="text-muted">By: {{ loan.book.authors|join(', ') }}</small>
                                 </div>
                             </div>
@@ -55,13 +55,13 @@
 
                         
                         <td class="align-middle">
-                            {{ loan.dueDate.strftime("%Y-%m-%d") }}
+                            {{ loan.dueDate.strftime("%d %b %Y") }}
                         </td>
 
                         
                         <td class="align-middle">
                             {% if is_returned %}
-                                {{ loan.returnDate.strftime("%Y-%m-%d") }}
+                                {{ loan.returnDate.strftime("%d %b %Y") }}
                             {% endif %}
                         </td>
                         
