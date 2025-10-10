@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, flash, redirect, url_for
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
 
@@ -22,7 +22,10 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'login' #The name of the view function for the login page
     
-    
+    @login_manager.unauthorized_handler
+    def unauthorized_callback():
+        flash("Please login or register first to get an account", "warning")
+        return redirect(url_for('login'))
 
     return app
 

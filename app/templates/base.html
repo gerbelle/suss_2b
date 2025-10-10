@@ -45,6 +45,16 @@
               </a>
             </li>
 
+          {# --- START LOAN VIEW LINK ADDED HERE --- #}
+          {% if current_user.is_authenticated and not current_user.is_admin %}
+            <li class="nav-item">
+              <a href="{{ url_for('my_loans') }}" class="nav-link py-3 ps-5 mb-2 sidebar-link active" style="color: white; ">
+                <i class="bi bi-clipboard-fill me-2"></i>Loans
+              </a>
+            </li>
+          {% endif %}
+          {# --- END LOAN VIEW LINK ADDED HERE --- #}
+
           {# --- START ADMIN-ONLY LINK ADDED HERE --- #}
           {% if current_user.email == "admin@lib.sg"  %}
           <li class="nav-item">

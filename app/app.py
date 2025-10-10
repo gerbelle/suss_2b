@@ -1,7 +1,10 @@
+import datetime
 from flask import Flask, request, render_template, redirect, url_for, flash
-from app.model import Book, db_with_books, User, LoginForm, RegForm, NewBookForm
+from app.model import Book, db_with_books, User, LoginForm, RegForm, NewBookForm, Loan
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app
+from mongoengine.errors import DoesNotExist
+from datetime import datetime, timedelta
 
 # Define a admin required
 from functools import wraps
@@ -201,16 +204,132 @@ def add_book():
             
     return render_template('add_book.html', form=form)
 
+
+
 # Making a loan
 @app.route('/make_loan/<string:title>', methods=['POST'])
 @login_required
 def make_loan(title):
-    book = Book.objects(title=title).first()
-    if book and book.available > 0:
-        book.available -= 1
-        book.save()
-        success, message = book.borrow(current_user)
-        flash(message, 'success' if success else 'danger')
-    else:
-        flash(f'Book "{book.title}" is not available for loan.', 'danger')
+
+    # 1. Check for Admin Status
+    if current_user.is_admin:
+        flash("Admin users are not permitted to make loans.", "danger")
+        return redirect(url_for('book_titles'))
+
+    try:
+        book = Book.objects.get(title=title)
+        
+        # Loan.create_loan now handles random date generation and checks
+        new_loan = Loan.create_loan(member=current_user, book=book)
+        
+        flash(f"Successfully borrowed '{book.title}' (Borrow Date: {new_loan.borrowDate.strftime('%Y-%m-%d')}).", 'success')
+        
+    except Book.DoesNotExist:
+        flash(f'Error: Book title "{title}" not found.', 'danger')
+        
+    except ValueError as e:
+        # Catches exceptions from Loan.create_loan
+        flash(str(e), 'warning')
+        
     return redirect(url_for('book_titles'))
+
+def get_loan_or_redirect(loan_id):
+    """
+    Helper to fetch a loan by ID, check ownership, and handle errors.
+    Returns the loan object or None if redirection/error occurred.
+    """
+    try:
+        loan = Loan.objects.get(id=loan_id, member=current_user.id)
+        return loan
+    except DoesNotExist:
+        flash("Loan not found or unauthorized access.", "danger")
+        return None
+    
+@app.route('/my_loans')
+@login_required
+def my_loans():
+
+    if current_user.is_admin:
+        flash("Admin users do not have a personal loan history to manage.", "danger")
+        return redirect(url_for('book_titles'))
+
+    # Fetch loans for the current user, sorted by most recent borrow date
+    all_loans = Loan.objects(member=current_user).order_by('-borrowDate')
+
+    return render_template('my_loans.html', 
+                           loans=all_loans,
+                           now=datetime.now())
+
+
+
+
+@app.route('/return_loan/<loan_id>', methods=['POST'])
+@login_required
+def return_loan_route(loan_id): 
+    """Handle returning a borrowed book."""
+    
+    if current_user.is_admin:
+        flash("Admins cannot return loans for other users.", "warning")
+        return redirect(url_for('book_titles'))
+
+    loan = get_loan_or_redirect(loan_id)
+    if loan is None:
+        return redirect(url_for('my_loans'))
+
+    try:
+        loan.return_loan()
+        # Use the return date for the success message
+        flash(f"You have successfully returned '{loan.book.title}'. Return Date: {loan.returnDate.strftime('%Y-%m-%d')}.", "success")
+        
+    except ValueError as e:
+        flash(str(e), "warning")
+
+    return redirect(url_for('my_loans'))
+
+
+@app.route('/renew_loan/<loan_id>', methods=['POST'])
+@login_required
+def renew_loan_route(loan_id): 
+    """Handle renewing a borrowed book."""
+    
+    if current_user.is_admin:
+        flash("Admins cannot renew loans.", "warning")
+        return redirect(url_for('book_titles'))
+
+    loan = get_loan_or_redirect(loan_id)
+    if loan is None:
+        return redirect(url_for('my_loans'))
+
+    try:
+        loan.renew_loan()
+        # Custom success message including the new due date
+        flash(f"'{loan.book.title}' renewed successfully! New due date: {loan.dueDate.strftime('%Y-%m-%d')}.", "success")
+        
+    except ValueError as e:
+        # Catches errors like "already returned", "overdue", or "renewal limit reached"
+        flash(str(e), "warning")
+
+    return redirect(url_for('my_loans'))
+
+
+@app.route('/delete_loan/<loan_id>', methods=['POST'])
+@login_required
+def delete_loan_route(loan_id): 
+    """Delete a returned loan from the database."""
+    if current_user.is_admin:
+        flash("Admins cannot delete loans.", "warning")
+        return redirect(url_for('book_titles'))
+
+    loan = get_loan_or_redirect(loan_id)
+    if loan is None:
+        return redirect(url_for('my_loans'))
+
+    try:
+        loan.delete_loan()
+        flash(f"Loan record for '{loan.book.title}' has been deleted.", "success")
+        
+    except ValueError as e:
+        # Catches 'Cannot delete a loan that has not been returned'
+        flash(str(e), "warning")
+
+    return redirect(url_for('my_loans'))

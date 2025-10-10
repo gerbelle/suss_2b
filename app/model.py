@@ -5,6 +5,9 @@ from wtforms import Form, SelectMultipleField, SelectField, StringField, Passwor
 from wtforms.validators import DataRequired, Length, NumberRange, InputRequired, Optional, URL, ValidationError
 from wtforms.fields import URLField
 from werkzeug.security import check_password_hash, generate_password_hash
+from mongoengine import DateTimeField
+from datetime import datetime, timedelta
+import random
 
 all_books = [
     {
@@ -180,6 +183,9 @@ all_books = [
         }
 ]
 
+# ----------------------------------------------------
+# BOOK MODEL
+# ----------------------------------------------------
 
 class Book(db.Document):
     """
@@ -244,6 +250,9 @@ def db_with_books():
         else:
             print("Book collection already populated.")
 
+# ----------------------------------------------------
+# USER MODEL/LOGIN REGISTRATION
+# ----------------------------------------------------
 
 class LoginForm(FlaskForm):
     """
@@ -326,6 +335,10 @@ class User(db.Document, UserMixin):
             print(f"Error saving user: {e}")
             return None
 
+
+# ----------------------------------------------------
+# ADD BOOK MODEL
+# ----------------------------------------------------
 # new book entry, global list of genres for the form
 GENRES = [
     "Animals", "Business", "Comics", "Communication", "Dark Academia",
@@ -389,3 +402,131 @@ class NewBookForm(FlaskForm):
         if not has_author:
             # CORRECT: Raise a ValidationError exception with your message
             raise ValidationError("You must enter at least one author/contributor name.")
+
+
+
+def _generate_loan_date(current_borrow_date=None):
+    """
+    Generates a random date based on the context:
+    1. If current_borrow_date is None (for initial loan): 10 to 20 days BEFORE today.
+    2. If current_borrow_date is provided (for renewal/return): 10 to 20 days AFTER the loan's borrowDate, capped at TODAY.
+    """
+    # Use datetime.now() for the current time
+    today = datetime.now() 
+    days_offset = random.randint(10, 20)
+    
+    if current_borrow_date is None:
+        # 1. Initial Loan: Random date 10 to 20 days BEFORE today
+        return today - timedelta(days=days_offset)
+    else:
+        # 2. Renewal/Return: 
+        candidate_date = current_borrow_date + timedelta(days=days_offset)
+        return min(candidate_date, today)
+
+# ----------------------------------------------------
+# LOAN MODEL 
+# ----------------------------------------------------
+class Loan(db.Document):
+    """
+    Represents a loan record in the BookStoreDB.
+    """
+    meta = {'collection': 'loans'}
+    member = db.ReferenceField(User, required=True)
+    book = db.ReferenceField(Book, required=True)
+    dueDate = db.DateTimeField() 
+    borrowDate = db.DateTimeField(required=True, default=datetime.now) 
+    returnDate = db.DateTimeField(default=None) 
+    renewCount = db.IntField(default=0, min_value=0) 
+
+    # ----------------------------
+    @property
+    def is_overdue(self):
+        """Check if the loan is currently unreturned and past the dueDate."""
+        if self.returnDate is None:
+            return datetime.now() > self.dueDate
+        return False
+        
+
+    @classmethod
+    def create_loan(cls, member, book):
+        """Creates a new loan if the member doesn't already have an unreturned loan for the same book and if the book is available."""
+
+        existing_loan = cls.objects(member=member, book=book, returnDate=None).first()
+        if existing_loan:
+            raise ValueError(f"You already have an unreturned loan for '{book.title}'.")
+
+        if book.available <= 0:
+            raise ValueError(f"'{book.title}' is currently not available for loan.")
+            
+        # 1. Generate random borrow date 10 to 20 days BEFORE today
+        borrow_date = _generate_loan_date() 
+        
+        # 2. Calculate due date 2 weeks after borrow date
+        due_date = borrow_date + timedelta(weeks=2)
+
+        # 3. Decrease available count & update member's borrowed titles
+        book.available -= 1
+        book.save()
+        member.borrowed_titles.append(book.title)
+        member.save()
+
+        # 4. Create new loan
+        loan = cls(member=member, book=book, borrowDate=borrow_date, dueDate=due_date, renewCount=0)
+        loan.save()
+        
+        return loan
+
+    # ----------------------------
+    # UPDATE loans 
+    # ----------------------------
+    def renew_loan(self):
+        """Renews the loan if it hasn't been renewed before."""
+        if self.returnDate:
+            raise ValueError("Cannot renew a loan that has already been returned.")
+
+        if self.is_overdue:
+             raise ValueError(f"Loan for '{self.book.title}' is overdue and can only be returned.")
+
+        if self.renewCount >= 2:
+            raise ValueError(f"Loan for '{self.book.title}' has reached its renewal limit (2) and can only be returned.")
+
+        # Generate a random new borrow date
+        new_borrow_date = _generate_loan_date(current_borrow_date=self.borrowDate)
+
+        self.borrowDate = new_borrow_date
+        self.dueDate = self.borrowDate + timedelta(weeks=2)
+        self.renewCount += 1
+        self.save()
+        
+
+    def return_loan(self): 
+        """Marks the loan as returned and updates the book's availability."""
+        if self.returnDate:
+            raise ValueError("Loan has already been returned.")
+
+        # Generate a random return date
+        random_return_date = _generate_loan_date(current_borrow_date=self.borrowDate)
+
+        self.returnDate = random_return_date
+        self.save()
+
+        # Update Book availability
+        book = self.book
+        book.available += 1
+        book.save()
+        
+        # Remove title from User's borrowed list
+        member = self.member
+        if book.title in member.borrowed_titles:
+             member.borrowed_titles.remove(book.title)
+             member.save()
+             
+    # ----------------------------
+    # DELETE loan 
+    # ----------------------------
+    def delete_loan(self):
+        """Deletes the loan record from the database."""
+        if not self.returnDate:
+            raise ValueError("Cannot delete a loan that has not been returned.")
+        self.delete()
+       
