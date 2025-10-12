@@ -23,6 +23,13 @@ cd tma_qn2b_3
 pip install -r requirements.txt
 ```
 
+#connect to Mongodb
+```
+1. install Mongodb extension on vsc
+add connection string
+2. mongodb://localhost:27017
+```
+
 # run the application 
 ```
 1. cd app
