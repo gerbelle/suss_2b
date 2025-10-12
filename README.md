@@ -23,7 +23,7 @@ cd tma_qn2b_3
 pip install -r requirements.txt
 ```
 
-#connect to Mongodb
+# connect to Mongodb
 ```
 1. install Mongodb extension on vsc
 add connection string
