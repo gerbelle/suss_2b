@@ -58,7 +58,7 @@ def get_book_by_title(title):
 @app.route('/book_titles')
 def book_titles():
     # use the db_with_books to populate the database and retrieve all books
-    #db_with_books()  # Ensure the database is populated with books
+    db_with_books()  # Ensure the database is populated with books
 
     # 1. get the selected category from the request
     selected_category = request.args.get('category', 'All')
